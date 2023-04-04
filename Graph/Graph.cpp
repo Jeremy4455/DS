@@ -22,6 +22,7 @@ int main() {
     g.printAllPaths("A", "D");
     cout << g.Kruskal();
     cout << g.Prim();
+    cout << g.breakCircle();
     return 0;
 }
 

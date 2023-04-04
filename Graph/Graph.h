@@ -20,18 +20,21 @@ private:
 	int findParent(vector<int>& parent, int u);
 public:
 	Graph(int maxV);										//	构造函数
-	Graph(int maxV, vector<T>vertex);										//	构造函数
+	Graph(int maxV, vector<T>vertex);						//	构造函数
 	~Graph();												//	析构函数
-	Graph(const Graph<T, W>& other);							//	拷贝构造函数
+	Graph(const Graph<T, W>& other);						//	拷贝构造函数
 	void addVertex(T v);									//	添加顶点
 	void addEdge(const T& v1, const T& v2, int weight=1);	//	添加边
 	void addEdge(int i, int j, int weight);
+	void removeEdge(int i, int j);
 	bool hasPath(const T& v1, const T& v2);					//	判断两个顶点间是否存在路径
 	void printAllPaths(const T& v1, const T& v2);			//	输出顶点间所有简单路径
 	void Display() const;									//	输出函数
-	Graph<T, W>& operator=(const Graph<T, W>& other);				//	赋值运算符重载
-	Graph<T, W> Kruskal();										//	Kruskal算法
+	Graph<T, W>& operator=(const Graph<T, W>& other);		//	赋值运算符重载
+	Graph<T, W> Kruskal();									//	Kruskal算法
 	Graph<T, W> Prim();										//	Prim算法
+	Graph<T, W> breakCircle();								//	破圈法
+	bool findCircle(int v, vector<bool>& visited, vector<int>& circle, Graph<T, W>& mst);
 	//friend ostream& operator<<(ostream& os, const Graph<T, W>& graph);	由于定义了Display函数，所以不需要定义为友元函数即可实现
 
 };
@@ -131,6 +134,12 @@ inline void Graph<T, W>::addEdge(int i, int j, int weight) {
 	}
 }
 
+template<typename T, typename W>
+inline void Graph<T, W>::removeEdge(int i, int j)
+{
+	adj[i][j] = 0;
+}
+
 template <typename T, typename W>
 inline int Graph<T, W>::findIndex(const T& v) {
 	for (int i = 0; i < numVertices; i++) {
@@ -202,7 +211,7 @@ inline void Graph<T, W>::printAllPathsHelper(int i, int j, vector<bool>& visited
 	path.pop_back();
 }
 
-//辅助找出两个顶点间的所有路径
+
 template <typename T, typename W>
 inline int Graph<T, W>::findParent(vector<int>& parent, int u)
 {
@@ -299,7 +308,7 @@ inline Graph<T, W> Graph<T, W>::Prim()
 	Graph<T, W> mst(numVertices);
 	if (numVertices == 0)	return mst;
 	vector<bool> visited(numVertices, false);
-	visited[0] = true;  
+	visited[0] = true;
 	priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
 	mst.addVertex(vertex[0]);
 	for (int j = 0; j < numVertices; j++) {
@@ -331,10 +340,75 @@ inline Graph<T, W> Graph<T, W>::Prim()
 	return mst;
 }
 
+template<typename T, typename W>
+inline Graph<T, W> Graph<T, W>::breakCircle()
+{
+	Graph<T, W> mst(*this);
+	vector<bool> visited(numVertices, false);
+	while (true) {
+		fill(visited.begin(), visited.end(), false);
+		vector<int> circle;
+		for (int i = 0; i < numVertices; i++) {
+			if (!visited[i] && findCircle(i, visited, circle, mst)) {
+				break;
+			}
+			circle.clear();
+		}
+		if (circle.empty()) {
+			break;
+		}
+	}
+	return mst;
+}
+
+template<typename T, typename W>
+inline bool Graph<T, W>::findCircle(int v, vector<bool>& visited, vector<int>& circle, Graph<T, W>& mst)
+{
+	visited[v] = true;
+	circle.push_back(v);
+	for (int i = 0; i < numVertices; i++) {
+		if (mst.adj[v][i] != 0) {
+			if (!visited[i]) {
+				if (findCircle(i, visited, circle, mst)) {
+					return true;
+				}
+			}
+			else if (i != circle[circle.size() - 2]) {
+				vector<int> edgeWeights;
+				int maxIndex = -1;
+				for (int j = circle.size() - 1; j > 0; j--) {
+					int u = circle[j - 1], w = circle[j];
+					if (mst.adj[u][w] != 0) {
+						edgeWeights.push_back(mst.adj[u][w]);
+						if (maxIndex == -1 || mst.adj[u][w] > edgeWeights[maxIndex]) {
+							maxIndex = edgeWeights.size() - 1;
+						}
+					}
+				}
+				// 从路径中删除最大权值的边
+				int k = 0;
+				for (int j = circle.size() - 1; j > 0; j--) {
+					int u = circle[j - 1], w = circle[j];
+					if (mst.adj[u][w] != 0) {
+						if (k == maxIndex) {
+							mst.removeEdge(u, w);
+							mst.removeEdge(w, u);
+							break;
+						}
+						k++;
+					}
+				}
+				return true;
+			}
+		}
+	}
+	circle.pop_back();
+	return false;
+}
+
 
 template <typename T, typename W>
 ostream& operator<<(ostream& os, const Graph<T, W>& graph) {
 	graph.Display();
 	return os;
 }
-
