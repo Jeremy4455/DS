@@ -18,6 +18,7 @@ private:
 	bool hasPathHelper(int i, int j, vector<bool>& visited);    //辅助判断两个顶点是否有路径
 	void printAllPathsHelper(int i, int j, vector<bool>& visited, vector<int>& path);   //辅助找出两个顶点间的所有路径
 	int findParent(vector<int>& parent, int u);
+	void findShortestPathHelper(int i, int j, vector<bool>& visited, vector<int>& path, vector<int>& shortest_path, W& weight);
 public:
 	Graph(int maxV);										//	构造函数
 	Graph(int maxV, vector<T>vertex);						//	构造函数
@@ -35,6 +36,7 @@ public:
 	Graph<T, W> Prim();										//	Prim算法
 	Graph<T, W> breakCircle();								//	破圈法
 	bool findCircle(int v, vector<bool>& visited, vector<int>& circle, Graph<T, W>& mst);
+	void findShortestPath(const T& v1, const T& v2);
 	//friend ostream& operator<<(ostream& os, const Graph<T, W>& graph);	由于定义了Display函数，所以不需要定义为友元函数即可实现
 
 };
@@ -223,6 +225,32 @@ inline int Graph<T, W>::findParent(vector<int>& parent, int u)
 	return findParent(parent, parent[u]);
 }
 
+template<typename T, typename W>
+inline void Graph<T, W>::findShortestPathHelper(int i, int j, vector<bool>& visited, vector<int>& path, vector<int>& shortest_path, W& weight)
+{
+	visited[i] = true;
+	path.push_back(i);
+	if (i == j) {
+		W sum_weight = 0;
+		for (int k = 0; k < path.size()-1; k++) {
+			sum_weight += adj[path[k]][path[k + 1]];
+		}
+		if (sum_weight < weight) {
+			weight = sum_weight;
+			shortest_path = path;
+		}
+	}
+	else {
+		for (int k = 0; k < numVertices; k++) {
+			if (adj[i][k] != 0 && !visited[k]) {
+				findShortestPathHelper(k, j, visited, path, shortest_path, weight);
+			}
+		}
+	}
+	visited[i] = false;
+	path.pop_back();
+}
+
 template <typename T, typename W>
 inline void Graph<T, W>::Display() const{
 	cout << "Vertices: ";
@@ -404,6 +432,27 @@ inline bool Graph<T, W>::findCircle(int v, vector<bool>& visited, vector<int>& c
 	}
 	circle.pop_back();
 	return false;
+}
+
+template<typename T, typename W>
+inline void Graph<T, W>::findShortestPath(const T& v1, const T& v2)
+{
+	int i = findIndex(v1);
+	int j = findIndex(v2);
+	if (i < 0 || j < 0) {
+		cout << "Invalid vertices" << endl;
+		return;
+	}
+	vector<bool> visited(numVertices, false);
+	vector<int> path;
+	vector<int> shortest_path;
+	W weight = 0x3f3f3f3f;
+	findShortestPathHelper(i, j, visited, path, shortest_path, weight);
+	cout << "Shortest Path: ";
+	for (int k = 0; k < shortest_path.size(); k++) {
+		cout << vertex[shortest_path[k]] << " ";
+	}
+	cout << endl << "Shortest Weight: " << weight << endl;
 }
 
 

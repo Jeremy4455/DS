@@ -23,6 +23,7 @@ int main() {
     cout << g.Kruskal();
     cout << g.Prim();
     cout << g.breakCircle();
+    g.findShortestPath("A", "D");
     return 0;
 }
 
